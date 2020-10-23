@@ -1,8 +1,16 @@
 package com.example.arduinobluetooth;
 
+    /*
+        OPISAC ARDUINO, JAK PRZECHODZI INFO PRZEZ BT DO NIEGO Z ANDROIDA
+        pełna dokumentacja + katalog z projektem aplikacji
+        biblioteki schematy
+        do 15 stycznia
+     */
+
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -20,6 +28,9 @@ import android.widget.Toast;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import org.w3c.dom.Text;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,18 +38,6 @@ import static android.content.ContentValues.TAG;
 
 
 public class BluetoothChat extends Activity {
-
-    // Message types sent from the BluetoothChatService Handler
-    public static final int MESSAGE_STATE_CHANGE = 1;
-    public static final int MESSAGE_READ = 2;
-    public static final int MESSAGE_WRITE = 3;
-    public static final int MESSAGE_DEVICE_NAME = 4;
-    public static final int MESSAGE_TOAST = 5;
-
-
-    // Key names received from the BluetoothChatService Handler
-    public static final String DEVICE_NAME = "device_name";
-    public static final String TOAST = "toast";
 
     // Intent request codes
     private static final int REQUEST_CONNECT_DEVICE = 1;
@@ -57,6 +56,9 @@ public class BluetoothChat extends Activity {
 
     // Member object for the chat services
     private BluetoothChatService mChatService = null;
+
+    //
+    private BluetoothHandler mBluetoothHandler = null;
 
     public int counter = 0;
 
@@ -91,12 +93,7 @@ public class BluetoothChat extends Activity {
     public void onStart() {
         Log.i(TAG, "onStart: BLUETOOTHCHAT");
         super.onStart();
-        if (!mBluetoothAdapter.isEnabled()) {
-            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
-        } else {
-            if (mChatService == null) setupChat();
-        }
+        if (mChatService == null) setupChat();
     }
 
     /*
@@ -119,6 +116,9 @@ public class BluetoothChat extends Activity {
     /*
         #6
      */
+    /*
+        Sets up whole chat. Send button gets string from TextView and calls sendMessage
+     */
     private void setupChat() {
         Log.i(TAG, "setupChat: BLUETOOTHCHAT");
         textView = (TextView) findViewById(R.id.textViewTest);
@@ -133,8 +133,11 @@ public class BluetoothChat extends Activity {
             }
         });
 
+        // Initialize BluetoothHandler
+        mBluetoothHandler = new BluetoothHandler(textView, getApplicationContext());
+
         // Initialize the BluetoothChatService to perform bluetooth connections
-        mChatService = new BluetoothChatService(this, mHandler);
+        mChatService = new BluetoothChatService(this, mBluetoothHandler);
 
         // Initialize the buffer for outgoing messages
         mOutStringBuffer = new StringBuffer("");
@@ -169,16 +172,6 @@ public class BluetoothChat extends Activity {
         super.onDestroy();
         // Stop the Bluetooth chat services
         if (mChatService != null) mChatService.stop();
-    }
-
-    private void ensureDiscoverable() {
-        Log.i(TAG, "ensureDiscoverable: BLUETOOTHCHAT");
-        if (mBluetoothAdapter.getScanMode() !=
-                BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
-            Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
-            startActivity(discoverableIntent);
-        }
     }
 
     /*
@@ -217,53 +210,12 @@ public class BluetoothChat extends Activity {
                 }
             };
 
-    // The Handler that gets information back from the BluetoothChatService
-    private final Handler mHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                /*
-                    #41 -> spowrotem loop na MESSAGE_READ
-                */
-                case MESSAGE_WRITE:
-                    Log.i(TAG, "handleMessage: BLUETOOTHCHAT Message write");
-                    byte[] writeBuf = (byte[]) msg.obj;
-                    // construct a string from the buffer
-                    String writeMessage = new String(writeBuf);
-                    textView.setText(writeMessage);
-                    break;
-                /*
-                    #36 LOOP
-                */
-                case MESSAGE_READ:
-                    Log.i(TAG, "handleMessage: BLUETOOTHCHAT message read");
-                    byte[] readBuf = (byte[]) msg.obj;
-                    // construct a string from the valid bytes in the buffer
-                    String readMessage = new String(readBuf, 0, msg.arg1);
-                    textView.setText(readMessage);
-                    break;
-                /*
-                    #35
-                */
-                case MESSAGE_DEVICE_NAME:
-                    Log.i(TAG, "handleMessage: BLUETOOTHCHAT message device name");
-                    // save the connected device's name
-                    mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
-                    Toast.makeText(getApplicationContext(), "Connected to "
-                            + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
-                    break;
-                case MESSAGE_TOAST:
-                    Log.i(TAG, "handleMessage: BLUETOOTHCHAT message toast");
-                    Toast.makeText(getApplicationContext(), msg.getData().getString(TOAST),
-                            Toast.LENGTH_SHORT).show();
-                    break;
-            }
-        }
-    };
-
     /*
         #5
         #22
+     */
+    /*
+        REQUEST_ENABLE_BT goes first -> when app requests BT to be enabled and user enables it or not (pressing Yes/No)
      */
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.i(TAG, "onActivityResult: BLUETOOTHCHAT");
@@ -301,13 +253,33 @@ public class BluetoothChat extends Activity {
         startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE);
     }
 
+    /*
+        Turning on discoverable mode in android
+     */
     public void discoverable(View v) {
         Log.i(TAG, "discoverable: BLUETOOTHCHAT");
         ensureDiscoverable();
     }
 
+    private void ensureDiscoverable() {
+        Log.i(TAG, "ensureDiscoverable: BLUETOOTHCHAT");
+        if (mBluetoothAdapter.getScanMode() != BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
+            Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
+            startActivity(discoverableIntent);
+        }
+    }
+
+    /*
+        Turning On or Off BT connection with a Button onClick -> starts intent with code = 2 / onActivityResult: 270-279
+     */
     public void bluetoothOnOff(View v) {
         Log.i(TAG, "bluetoothOnOff: BLUETOOTHCHAT");
-
+        if (!mBluetoothAdapter.isEnabled()) {
+            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
+        } else {
+            mBluetoothAdapter.disable();
+        }
     }
 }
