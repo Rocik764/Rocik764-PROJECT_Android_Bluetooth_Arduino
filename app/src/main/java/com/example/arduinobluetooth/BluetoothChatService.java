@@ -6,16 +6,15 @@ import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.util.UUID;
-
-import javax.security.auth.login.LoginException;
 
 import static android.content.ContentValues.TAG;
 
@@ -25,10 +24,10 @@ import static android.content.ContentValues.TAG;
  * incoming connections, a thread for connecting with a device, and a
  * thread for performing data transmissions when connected.
  */
-public class BluetoothChatService {
+public class BluetoothChatService implements Serializable {
 
     // Name for the SDP record when creating server socket
-    private static final String NAME = "BluetoothChat";
+    private static final String NAME = "BluetoothFragment";
 
     // Unique UUID for this application
     private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
@@ -39,6 +38,7 @@ public class BluetoothChatService {
     private AcceptThread mAcceptThread;
     private ConnectThread mConnectThread;
     private ConnectedThread mConnectedThread;
+    private Context context;
     private int mState;
 
     // Constants that indicate the current connection state
@@ -48,20 +48,24 @@ public class BluetoothChatService {
     public static final int STATE_CONNECTED = 3;  // now connected to a remote device
 
     /**
-     * Constructor. Prepares a new BluetoothChat session.
+     * Constructor. Prepares a new BluetoothFragment session.
      *
-     * @param context The UI Activity Context
      * @param handler A Handler to send messages back to the UI Activity
      */
 
     /*
         #7
      */
-    public BluetoothChatService(Context context, BluetoothHandler handler) {
+    public BluetoothChatService(BluetoothHandler handler, Context context) {
         Log.i(TAG, "BluetoothChatService: BLUETOOTHCHATSERVICE");
-        mAdapter = BluetoothAdapter.getDefaultAdapter();
-        mState = STATE_NONE;
-        mHandler = handler;
+        this.mAdapter = BluetoothAdapter.getDefaultAdapter();
+        this.mState = STATE_NONE;
+        this.mHandler = handler;
+        this.context = context;
+    }
+
+    public BluetoothHandler getmHandler() {
+        return this.mHandler;
     }
 
     /**
@@ -78,7 +82,7 @@ public class BluetoothChatService {
         Log.i(TAG, "setState: BLUETOOTHCHATSERVICE" + state);
         mState = state;
         // Give the new state to the Handler so the UI Activity can update
-        mHandler.obtainMessage(mHandler.MESSAGE_STATE_CHANGE, state, -1).sendToTarget();
+        mHandler.obtainMessage(BluetoothHandler.MESSAGE_STATE_CHANGE, state, -1).sendToTarget();
     }
 
     /**
@@ -93,6 +97,22 @@ public class BluetoothChatService {
     public synchronized int getState() {
         Log.i(TAG, "getState: BLUETOOTHCHATSERVICE");
         return mState;
+    }
+
+    public boolean sendMessage(String message) {
+        Log.i(TAG, "sendMessage: MAIN");
+        // Check that we're actually connected before trying anything
+        if (getState() != BluetoothChatService.STATE_CONNECTED) {
+            return false;
+        }
+        // Check that there's actually something to send
+        if (message.length() > 0) {
+            // Get the message bytes and tell the BluetoothChatService to write
+            byte[] send = message.getBytes();
+            write(send);
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -278,6 +298,8 @@ public class BluetoothChatService {
             try {
                 tmp = mAdapter.listenUsingRfcommWithServiceRecord(NAME, MY_UUID);
             } catch (IOException e) {
+                Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                System.out.println(e.toString());
             }
             mmServerSocket = tmp;
         }
@@ -288,7 +310,7 @@ public class BluetoothChatService {
         public void run() {
             Log.i(TAG, "run: AcceptThread BLUETOOTHCHATSERVICE");
             setName("AcceptThread");
-            BluetoothSocket socket = null;
+            BluetoothSocket socket;
             // Listen to the server socket if we're not connected
             while (mState != STATE_CONNECTED) {
                 try {
@@ -313,6 +335,8 @@ public class BluetoothChatService {
                                 try {
                                     socket.close();
                                 } catch (IOException e) {
+                                    Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                                    System.out.println(e.toString());
                                 }
                                 break;
                         }
@@ -329,6 +353,8 @@ public class BluetoothChatService {
             try {
                 mmServerSocket.close();
             } catch (IOException e) {
+                Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                System.out.println(e.toString());
             }
         }
     }
@@ -354,6 +380,8 @@ public class BluetoothChatService {
             try {
                 tmp = device.createRfcommSocketToServiceRecord(MY_UUID);
             } catch (IOException e) {
+                Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                System.out.println(e.toString());
             }
             mmSocket = tmp;
         }
@@ -373,11 +401,14 @@ public class BluetoothChatService {
                 mmSocket.connect();
             } catch (IOException e) {
                 Log.d("error: ", e.toString());
+                Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
                 connectionFailed();
                 // Close the socket
                 try {
                     mmSocket.close();
                 } catch (IOException e2) {
+                    Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                    System.out.println(e2.toString());
                 }
                 // Start the service over to restart listening mode
                 BluetoothChatService.this.start();
@@ -396,6 +427,8 @@ public class BluetoothChatService {
             try {
                 mmSocket.close();
             } catch (IOException e) {
+                Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                System.out.println(e.toString());
             }
         }
     }
@@ -422,6 +455,8 @@ public class BluetoothChatService {
                 tmpIn = socket.getInputStream();
                 tmpOut = socket.getOutputStream();
             } catch (IOException e) {
+                Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                System.out.println(e.toString());
             }
             mmInStream = tmpIn;
             mmOutStream = tmpOut;
@@ -465,6 +500,8 @@ public class BluetoothChatService {
                 mHandler.obtainMessage(BluetoothHandler.MESSAGE_WRITE, -1, -1, buffer)
                         .sendToTarget();
             } catch (IOException e) {
+                Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                System.out.println(e.toString());
             }
         }
 
@@ -473,6 +510,8 @@ public class BluetoothChatService {
             try {
                 mmSocket.close();
             } catch (IOException e) {
+                Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                System.out.println(e.toString());
             }
         }
     }

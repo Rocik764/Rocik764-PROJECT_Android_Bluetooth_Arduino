@@ -22,19 +22,12 @@ public class BluetoothHandler extends Handler {
     public static final String DEVICE_NAME = "device_name";
     public static final String TOAST = "toast";
 
-    private String mConnectedDeviceName = null;
-
     public TextView textView;
     private Context context;
 
     // The Handler that gets information back from the BluetoothChatService
-    public BluetoothHandler(TextView textView, Context context) {
-        this.textView = textView;
+    public BluetoothHandler(Context context) {
         this.context = context;
-    }
-
-    public void sendToTarget() {
-        throw new RuntimeException("Stub!");
     }
 
     public void handleMessage(Message msg) {
@@ -47,17 +40,20 @@ public class BluetoothHandler extends Handler {
                 byte[] writeBuf = (byte[]) msg.obj;
                 // construct a string from the buffer
                 String writeMessage = new String(writeBuf);
-                textView.setText(writeMessage);
+                if(textView == null) break;
+                else textView.setText(writeMessage);
                 break;
             /*
                 #36 LOOP
             */
             case MESSAGE_READ:
                 Log.i(TAG, "handleMessage: BLUETOOTHCHAT message read");
-                byte[] readBuf = (byte[]) msg.obj;
-                // construct a string from the valid bytes in the buffer
-                String readMessage = new String(readBuf, 0, msg.arg1);
-                textView.setText(readMessage);
+                if(textView != null) {
+                    byte[] readBuf = (byte[]) msg.obj;
+                    //construct a string from the valid bytes in the buffer
+                    String readMessage = new String(readBuf, 0, msg.arg1);
+                    textView.setText(readMessage);
+                } else break;
                 break;
             /*
                 #35
@@ -65,7 +61,7 @@ public class BluetoothHandler extends Handler {
             case MESSAGE_DEVICE_NAME:
                 Log.i(TAG, "handleMessage: BLUETOOTHCHAT message device name");
                 // save the connected device's name
-                mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
+                String mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
                 Toast.makeText(context, "Connected to "
                         + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
                 break;
@@ -75,5 +71,9 @@ public class BluetoothHandler extends Handler {
                         Toast.LENGTH_SHORT).show();
                 break;
         }
+    }
+
+    public void setTextView(TextView textView) {
+        this.textView = textView;
     }
 }
