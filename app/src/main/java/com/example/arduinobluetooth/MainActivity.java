@@ -36,7 +36,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public BluetoothAdapter mBluetoothAdapter;
 
     // Member object for the chat services
-    public BluetoothChatService mChatService;
+    public BluetoothChat mBluetoothchat;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,7 +78,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public void onStart() {
         Log.i(TAG, "onStart: MAIN");
         super.onStart();
-        if (mChatService == null) setupService();
     }
 
     /*
@@ -91,9 +90,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public synchronized void onResume() {
         Log.i(TAG, "onResume: MAIN");
         super.onResume();
-        if (mChatService != null) {
-            if (mChatService.getState() == BluetoothChatService.STATE_NONE) {
-                mChatService.start();
+        if (mBluetoothchat != null) {
+            if (mBluetoothchat.getState() == BluetoothChat.STATE_NONE) {
+                mBluetoothchat.start();
             }
         }
     }
@@ -128,7 +127,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         Log.i(TAG, "onDestroy: MAIN");
         super.onDestroy();
         // Stop the Bluetooth chat services
-        //if (mChatService != null) mChatService.stop();
+        //if (mBluetoothchat != null) mBluetoothchat.stop();
     }
 
     public void onBackPressed() {
@@ -160,9 +159,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     // Get the BLuetoothDevice object
                     BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
                     // Attempt to connect to the device
-                    mChatService.connect(device);
-                    appState.setmChatService(mChatService);
-                    setupService();
+                    setupChat();
+                    mBluetoothchat.connect(device);
+                    appState.setmChatService(mBluetoothchat);
                 }
                 break;
             case REQUEST_ENABLE_BT:
@@ -180,23 +179,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     /*
         Sets up whole chat. Send button gets string from TextView and calls sendMessage
     */
-    private void setupService() {
+    private void setupChat() {
         Log.i(TAG, "setupService: MAIN");
 
         // Initialize BluetoothHandler
         BluetoothHandler mBluetoothHandler = new BluetoothHandler(getApplicationContext());
 
-        // Initialize the BluetoothChatService to perform bluetooth connections
-        mChatService = new BluetoothChatService(mBluetoothHandler,this);
-    }
-
-    private void ensureDiscoverable() {
-        Log.i(TAG, "ensureDiscoverable: MAIN");
-        if (mBluetoothAdapter.getScanMode() != BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
-            Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
-            startActivity(discoverableIntent);
-        }
+        // Initialize the BluetoothChat to perform bluetooth connections
+        mBluetoothchat = new BluetoothChat(mBluetoothHandler,this);
     }
 
     @Override
@@ -226,7 +216,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public boolean onOptionsItemSelected(MenuItem item) {
         Log.i(TAG, "onOptionsItemSelected: MAIN");
         switch (item.getItemId()) {
-            case R.id.connect:
+            case R.id.search:
                 Intent serverIntent = new Intent(this, DeviceListActivity.class);
                 startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE);
                 return true;
@@ -238,8 +228,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     mBluetoothAdapter.disable();
                 }
                 return true;
-            case R.id.discoverable:
-                ensureDiscoverable();
+            case R.id.disconnect:
+                mBluetoothchat.stop();
+                appState.stopState();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

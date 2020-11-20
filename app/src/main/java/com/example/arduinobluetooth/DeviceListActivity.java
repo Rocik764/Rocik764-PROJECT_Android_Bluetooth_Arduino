@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.AdapterView;
@@ -18,6 +19,8 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import java.util.Set;
+
+import static android.content.ContentValues.TAG;
 
 public class DeviceListActivity extends Activity {
     // Return Intent extra
@@ -40,6 +43,8 @@ public class DeviceListActivity extends Activity {
             doDiscovery();
             v.setVisibility(View.GONE);
         });
+        Button discoverable = findViewById(R.id.button_discoverable);
+        discoverable.setOnClickListener(v -> ensureDiscoverable());
         // Initialize array adapters. One for already paired devices and
         // one for newly discovered devices
         ArrayAdapter<CharSequence> mPairedDevicesArrayAdapter = new ArrayAdapter<>(this, R.layout.device_name);
@@ -145,4 +150,14 @@ public class DeviceListActivity extends Activity {
             }
         }
     };
+
+    private void ensureDiscoverable() {
+        Log.i(TAG, "ensureDiscoverable: MAIN");
+        BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (mBluetoothAdapter.getScanMode() != BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
+            Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
+            startActivity(discoverableIntent);
+        }
+    }
 }

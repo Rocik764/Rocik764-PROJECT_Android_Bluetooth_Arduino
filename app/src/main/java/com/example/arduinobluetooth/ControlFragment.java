@@ -20,7 +20,7 @@ import static android.content.ContentValues.TAG;
 public class ControlFragment extends Fragment {
 
     private TextView textView;
-    private BluetoothChatService mChatService;
+    private BluetoothChat mBluetoothchat;
     private BaseApp appState;
 
     @Override
@@ -28,7 +28,7 @@ public class ControlFragment extends Fragment {
         Log.i(TAG, "onCreate: CONTROLFRAGMENT");
         super.onCreate(savedInstanceState);
         appState = ((BaseApp) Objects.requireNonNull(getActivity()).getApplication());
-        mChatService = appState.getmChatService();
+        mBluetoothchat = appState.getmChatService();
     }
 
     @Nullable
@@ -46,12 +46,12 @@ public class ControlFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        if (mChatService != null) {
-            if (mChatService.getState() == BluetoothChatService.STATE_NONE) {
-                mChatService.start();
-                mChatService.getmHandler().setTextView(textView);
+        if (mBluetoothchat != null) {
+            if (mBluetoothchat.getState() == BluetoothChat.STATE_NONE) {
+                mBluetoothchat.start();
+                mBluetoothchat.getmHandler().setTextView(textView);
             }
-        } else mChatService = appState.getmChatService();
+        } else mBluetoothchat = appState.getmChatService();
     }
 
     @Override
@@ -71,7 +71,7 @@ public class ControlFragment extends Fragment {
 
     private void setupChat(View view) {
         textView = view.findViewById(R.id.answer_txtview_ctrl);
-        if(mChatService != null) mChatService.getmHandler().setTextView(textView);
+        if(mBluetoothchat != null) mBluetoothchat.getmHandler().setTextView(textView);
 
         Button option0 = view.findViewById(R.id.option0_btn);
         option0.setOnClickListener(view0 -> buttonControl("0"));
@@ -106,8 +106,8 @@ public class ControlFragment extends Fragment {
     }
 
     private void buttonControl(String option) {
-        if(mChatService != null) {
-            if(mChatService.sendMessage(option)) {
+        if(mBluetoothchat != null) {
+            if(mBluetoothchat.sendMessage(option)) {
                 Toast.makeText(getActivity(), "Option " + option, Toast.LENGTH_SHORT).show();
             } else Toast.makeText(getActivity(), R.string.not_connected, Toast.LENGTH_SHORT).show();
         } else Toast.makeText(getActivity(),R.string.not_connected, Toast.LENGTH_LONG).show();

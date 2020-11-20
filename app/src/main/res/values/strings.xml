@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">ArduinoBluetooth</string>
     <string name="not_connected">Not connected</string>
-    <string name="button_scan">Button scan</string>
+    <string name="button_scan">Scan for devices</string>
     <string name="title_other_devices">Other devices</string>
     <string name="title_paired_devices">Paired devices</string>
     <string name="send">Send</string>
@@ -33,8 +33,9 @@
     <string name="Option12">Option 12</string>
     <string name="Option13">Option 13</string>
     <string name="Option14">Option 14</string>
-    <string name="item_1">Item 1</string>
-    <string name="bt_on_off">BT ON/OFF</string>
+    <string name="BT_search">Search for device</string>
+    <string name="BT_disconnect">Disconnect from device</string>
+    <string name="BT_on_off">Turn BT ON/OFF</string>
     <string name="answer">Answer</string>
     <string name="type_text">Type some text to send</string>
     <string name="exit">Exit</string>

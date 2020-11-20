@@ -4,14 +4,17 @@ import android.app.Application;
 
 public class BaseApp extends Application {
 
-    public BluetoothChatService mChatService;
+    public BluetoothChat mBluetoothchat;
 
-    public BluetoothChatService getmChatService() {
-        return mChatService;
+    public BluetoothChat getmChatService() {
+        return this.mBluetoothchat;
     }
 
-    public void setmChatService(BluetoothChatService bluetoothChatService) {
-        mChatService = bluetoothChatService;
+    public void setmChatService(BluetoothChat bluetoothChat) {
+       this.mBluetoothchat = bluetoothChat;
     }
 
+    public void stopState() {
+        this.mBluetoothchat = null;
+    }
 }

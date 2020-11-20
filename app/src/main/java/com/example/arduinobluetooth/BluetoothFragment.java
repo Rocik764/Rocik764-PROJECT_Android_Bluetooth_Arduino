@@ -28,7 +28,7 @@ import static android.content.ContentValues.TAG;
 
 public class BluetoothFragment extends Fragment {
 
-    public BluetoothChatService mChatService;
+    public BluetoothChat mBluetoothchat;
     public Button mSendButton;
     public TextView textView;
     public EditText mOutEditText;
@@ -40,7 +40,7 @@ public class BluetoothFragment extends Fragment {
         Log.i(TAG, "onCreate: BLUETOOTHCHAT");
         super.onCreate(savedInstanceState);
         appState = ((BaseApp) Objects.requireNonNull(getActivity()).getApplication());
-        mChatService = appState.getmChatService();
+        mBluetoothchat = appState.getmChatService();
     }
     /*
             #1
@@ -75,12 +75,12 @@ public class BluetoothFragment extends Fragment {
     public synchronized void onResume() {
         Log.i(TAG, "onResume: BLUETOOTHCHAT");
         super.onResume();
-        if (mChatService != null) {
-            if (mChatService.getState() == BluetoothChatService.STATE_NONE) {
-                mChatService.start();
-                mChatService.getmHandler().setTextView(textView);
+        if (mBluetoothchat != null) {
+            if (mBluetoothchat.getState() == BluetoothChat.STATE_NONE) {
+                mBluetoothchat.start();
+                mBluetoothchat.getmHandler().setTextView(textView);
             }
-        } else mChatService = appState.getmChatService();
+        } else mBluetoothchat = appState.getmChatService();
     }
 
     /*
@@ -109,23 +109,23 @@ public class BluetoothFragment extends Fragment {
         Log.i(TAG, "onDestroy: BLUETOOTHCHAT");
         super.onDestroy();
         // Stop the Bluetooth chat services
-        //if (mChatService != null) mChatService.stop();
+        //if (mBluetoothchat != null) mBluetoothchat.stop();
     }
 
     @SuppressLint("CutPasteId")
     public void setupChat(View view) {
         Log.i(TAG, "setupChat: MAIN");
         textView = view.findViewById(R.id.answer_txtview_bt);
-        if(mChatService != null) mChatService.getmHandler().setTextView(textView);
+        if(mBluetoothchat != null) mBluetoothchat.getmHandler().setTextView(textView);
 
         mOutEditText = view.findViewById(R.id.edit_text_out);
         mOutEditText.setOnEditorActionListener(mWriteListener);
         mSendButton = view.findViewById(R.id.button_send);
         mSendButton.setOnClickListener(v -> {
-            if(mChatService != null) {
+            if(mBluetoothchat != null) {
                 TextView editTextView = view.findViewById(R.id.edit_text_out);
                 String message = editTextView.getText().toString();
-                if(mChatService.sendMessage(message)) {
+                if(mBluetoothchat.sendMessage(message)) {
                     // Reset out string buffer to zero and clear the edit text field
                     mOutStringBuffer.setLength(0);
                     mOutEditText.setText(mOutStringBuffer);
@@ -145,7 +145,7 @@ public class BluetoothFragment extends Fragment {
                     // If the action is a key-up event on the return key, send the message
                     if (actionId == EditorInfo.IME_NULL && event.getAction() == KeyEvent.ACTION_UP) {
                         String message = view.getText().toString();
-                        mChatService.sendMessage(message);
+                        mBluetoothchat.sendMessage(message);
                     }
                     return true;
                 }

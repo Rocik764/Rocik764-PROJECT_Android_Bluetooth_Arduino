@@ -24,7 +24,7 @@ import static android.content.ContentValues.TAG;
  * incoming connections, a thread for connecting with a device, and a
  * thread for performing data transmissions when connected.
  */
-public class BluetoothChatService implements Serializable {
+public class BluetoothChat implements Serializable {
 
     // Name for the SDP record when creating server socket
     private static final String NAME = "BluetoothFragment";
@@ -56,8 +56,8 @@ public class BluetoothChatService implements Serializable {
     /*
         #7
      */
-    public BluetoothChatService(BluetoothHandler handler, Context context) {
-        Log.i(TAG, "BluetoothChatService: BLUETOOTHCHATSERVICE");
+    public BluetoothChat(BluetoothHandler handler, Context context) {
+        Log.i(TAG, "BluetoothChat: BLUETOOTHCHATSERVICE");
         this.mAdapter = BluetoothAdapter.getDefaultAdapter();
         this.mState = STATE_NONE;
         this.mHandler = handler;
@@ -102,12 +102,12 @@ public class BluetoothChatService implements Serializable {
     public boolean sendMessage(String message) {
         Log.i(TAG, "sendMessage: MAIN");
         // Check that we're actually connected before trying anything
-        if (getState() != BluetoothChatService.STATE_CONNECTED) {
+        if (getState() != BluetoothChat.STATE_CONNECTED) {
             return false;
         }
         // Check that there's actually something to send
         if (message.length() > 0) {
-            // Get the message bytes and tell the BluetoothChatService to write
+            // Get the message bytes and tell the BluetoothChat to write
             byte[] send = message.getBytes();
             write(send);
             return true;
@@ -286,7 +286,7 @@ public class BluetoothChatService implements Serializable {
     private class AcceptThread extends Thread {
 
         // The local server socket
-        private final BluetoothServerSocket mmServerSocket;
+        private BluetoothServerSocket mmServerSocket;
 
         /*
             #11
@@ -310,7 +310,7 @@ public class BluetoothChatService implements Serializable {
         public void run() {
             Log.i(TAG, "run: AcceptThread BLUETOOTHCHATSERVICE");
             setName("AcceptThread");
-            BluetoothSocket socket;
+            BluetoothSocket socket = null;
             // Listen to the server socket if we're not connected
             while (mState != STATE_CONNECTED) {
                 try {
@@ -318,11 +318,12 @@ public class BluetoothChatService implements Serializable {
                     // successful connection or an exception
                     socket = mmServerSocket.accept();
                 } catch (IOException e) {
-                    break;
+                    Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                    System.out.println(e.toString());
                 }
                 // If a connection was accepted
                 if (socket != null) {
-                    synchronized (BluetoothChatService.this) {
+                    synchronized (BluetoothChat.this) {
                         switch (mState) {
                             case STATE_LISTEN:
                             case STATE_CONNECTING:
@@ -411,11 +412,11 @@ public class BluetoothChatService implements Serializable {
                     System.out.println(e2.toString());
                 }
                 // Start the service over to restart listening mode
-                BluetoothChatService.this.start();
+                BluetoothChat.this.start();
                 return;
             }
             // Reset the ConnectThread because we're done
-            synchronized (BluetoothChatService.this) {
+            synchronized (BluetoothChat.this) {
                 mConnectThread = null;
             }
             // Start the connected thread
