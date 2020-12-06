@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     // Local Bluetooth adapter
     public BluetoothAdapter mBluetoothAdapter;
 
-    // Member object for the chat services
+    // Member object for the bluetooth connection
     public BluetoothChat mBluetoothchat;
 
     @Override
@@ -152,8 +152,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         Log.i(TAG, "onActivityResult: BLUETOOTHCHAT");
         switch (requestCode) {
             case REQUEST_CONNECT_DEVICE:
-                // When DeviceListActivity returns with a device to connect
-                if (resultCode == Activity.RESULT_OK) {
+                if(mBluetoothchat != null && mBluetoothchat.getState() == BluetoothChat.STATE_CONNECTING) {
+                    Toast.makeText(this, "Already connecting", Toast.LENGTH_SHORT).show();
+                } // When DeviceListActivity returns with a device to connect
+                else if (resultCode == Activity.RESULT_OK) {
                     // Get the device MAC address
                     String address = Objects.requireNonNull(data.getExtras()).getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
                     // Get the BLuetoothDevice object
@@ -197,7 +199,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new BluetoothFragment()).commit();
                 break;
             case R.id.nav_control:
-                getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new ControlFragment()).commit();
+                getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new CalculatorFragment()).commit();
             case R.id.nav_exit:
                 break;
         }

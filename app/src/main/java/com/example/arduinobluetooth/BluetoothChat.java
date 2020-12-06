@@ -8,12 +8,10 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Message;
 import android.util.Log;
-import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Serializable;
 import java.util.UUID;
 
 import static android.content.ContentValues.TAG;
@@ -24,7 +22,7 @@ import static android.content.ContentValues.TAG;
  * incoming connections, a thread for connecting with a device, and a
  * thread for performing data transmissions when connected.
  */
-public class BluetoothChat implements Serializable {
+public class BluetoothChat {
 
     // Name for the SDP record when creating server socket
     private static final String NAME = "BluetoothFragment";
@@ -257,11 +255,7 @@ public class BluetoothChat implements Serializable {
         Log.i(TAG, "connectionFailed: BLUETOOTHCHATSERVICE");
         setState(STATE_LISTEN);
         // Send a failure message back to the Activity
-        Message msg = mHandler.obtainMessage(BluetoothHandler.MESSAGE_TOAST);
-        Bundle bundle = new Bundle();
-        bundle.putString(BluetoothHandler.TOAST, "Unable to connect device");
-        msg.setData(bundle);
-        mHandler.sendMessage(msg);
+        error("Unable to connect device");
     }
 
     /**
@@ -271,11 +265,7 @@ public class BluetoothChat implements Serializable {
         Log.i(TAG, "connectionLost: BLUETOOTHCHATSERVICE");
         setState(STATE_LISTEN);
         // Send a failure message back to the Activity
-        Message msg = mHandler.obtainMessage(BluetoothHandler.MESSAGE_TOAST);
-        Bundle bundle = new Bundle();
-        bundle.putString(BluetoothHandler.TOAST, "Device connection was lost");
-        msg.setData(bundle);
-        mHandler.sendMessage(msg);
+        error("Device connection was lost");
     }
 
     /**
@@ -298,7 +288,7 @@ public class BluetoothChat implements Serializable {
             try {
                 tmp = mAdapter.listenUsingRfcommWithServiceRecord(NAME, MY_UUID);
             } catch (IOException e) {
-                Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                error("Something went wrong");
                 System.out.println(e.toString());
             }
             mmServerSocket = tmp;
@@ -318,7 +308,7 @@ public class BluetoothChat implements Serializable {
                     // successful connection or an exception
                     socket = mmServerSocket.accept();
                 } catch (IOException e) {
-                    Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                    error("Something went wrong");
                     System.out.println(e.toString());
                 }
                 // If a connection was accepted
@@ -336,7 +326,7 @@ public class BluetoothChat implements Serializable {
                                 try {
                                     socket.close();
                                 } catch (IOException e) {
-                                    Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                                    error("Something went wrong");
                                     System.out.println(e.toString());
                                 }
                                 break;
@@ -354,7 +344,7 @@ public class BluetoothChat implements Serializable {
             try {
                 mmServerSocket.close();
             } catch (IOException e) {
-                Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                error("Something went wrong");
                 System.out.println(e.toString());
             }
         }
@@ -381,7 +371,7 @@ public class BluetoothChat implements Serializable {
             try {
                 tmp = device.createRfcommSocketToServiceRecord(MY_UUID);
             } catch (IOException e) {
-                Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                error("Something went wrong");
                 System.out.println(e.toString());
             }
             mmSocket = tmp;
@@ -402,13 +392,13 @@ public class BluetoothChat implements Serializable {
                 mmSocket.connect();
             } catch (IOException e) {
                 Log.d("error: ", e.toString());
-                Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                error("Something went wrong");
                 connectionFailed();
                 // Close the socket
                 try {
                     mmSocket.close();
                 } catch (IOException e2) {
-                    Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                    error("Something went wrong");
                     System.out.println(e2.toString());
                 }
                 // Start the service over to restart listening mode
@@ -428,7 +418,7 @@ public class BluetoothChat implements Serializable {
             try {
                 mmSocket.close();
             } catch (IOException e) {
-                Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                error("Something went wrong");
                 System.out.println(e.toString());
             }
         }
@@ -456,7 +446,7 @@ public class BluetoothChat implements Serializable {
                 tmpIn = socket.getInputStream();
                 tmpOut = socket.getOutputStream();
             } catch (IOException e) {
-                Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                error("Something went wrong");
                 System.out.println(e.toString());
             }
             mmInStream = tmpIn;
@@ -501,7 +491,7 @@ public class BluetoothChat implements Serializable {
                 mHandler.obtainMessage(BluetoothHandler.MESSAGE_WRITE, -1, -1, buffer)
                         .sendToTarget();
             } catch (IOException e) {
-                Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                error("Something went wrong");
                 System.out.println(e.toString());
             }
         }
@@ -511,9 +501,17 @@ public class BluetoothChat implements Serializable {
             try {
                 mmSocket.close();
             } catch (IOException e) {
-                Toast.makeText(context, R.string.something_wrong, Toast.LENGTH_LONG).show();
+                error("Something went wrong");
                 System.out.println(e.toString());
             }
         }
+    }
+
+    private void error(String message) {
+        Message msg = mHandler.obtainMessage(BluetoothHandler.MESSAGE_TOAST);
+        Bundle bundle = new Bundle();
+        bundle.putString(BluetoothHandler.TOAST, message);
+        msg.setData(bundle);
+        mHandler.sendMessage(msg);
     }
 }

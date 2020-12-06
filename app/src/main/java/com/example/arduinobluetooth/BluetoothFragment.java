@@ -125,6 +125,7 @@ public class BluetoothFragment extends Fragment {
             if(mBluetoothchat != null) {
                 TextView editTextView = view.findViewById(R.id.edit_text_out);
                 String message = editTextView.getText().toString();
+                message += "\n";
                 if(mBluetoothchat.sendMessage(message)) {
                     // Reset out string buffer to zero and clear the edit text field
                     mOutStringBuffer.setLength(0);
