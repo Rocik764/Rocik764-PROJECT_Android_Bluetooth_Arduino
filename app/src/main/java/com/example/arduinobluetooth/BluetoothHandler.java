@@ -7,10 +7,9 @@ import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import static android.content.ContentValues.TAG;
-
 public class BluetoothHandler extends Handler {
 
+    private static final String TAG = "MY_LOG ";
     // Message types sent from the BluetoothChat Handler
     public static final int MESSAGE_STATE_CHANGE = 1;
     public static final int MESSAGE_READ = 2;
@@ -27,27 +26,25 @@ public class BluetoothHandler extends Handler {
 
     // The Handler that gets information back from the BluetoothChat
     public BluetoothHandler(Context context) {
+        Log.i(TAG, "BluetoothHandler: constructor");
         this.context = context;
     }
 
+    /**
+     * automatically handles messages in switch case. Gets the sent message data
+     * and sets textview "Answer" to what's being send to arduino
+     */
     public void handleMessage(Message msg) {
         switch (msg.what) {
-            /*
-                #41 -> spowrotem loop na MESSAGE_READ
-            */
             case MESSAGE_WRITE:
-                Log.i(TAG, "handleMessage: BLUETOOTHCHAT Message write");
+                Log.i(TAG, "BluetoothHandler: handleMessage: BLUETOOTHCHAT Message write");
                 byte[] writeBuf = (byte[]) msg.obj;
                 // construct a string from the buffer
                 String writeMessage = new String(writeBuf);
                 if(textView == null) break;
                 else textView.setText(writeMessage);
                 break;
-            /*
-                #36 LOOP
-            */
             case MESSAGE_READ:
-                Log.i(TAG, "handleMessage: BLUETOOTHCHAT message read");
                 if(textView != null) {
                     byte[] readBuf = (byte[]) msg.obj;
                     //construct a string from the valid bytes in the buffer
@@ -55,18 +52,15 @@ public class BluetoothHandler extends Handler {
                     textView.setText(readMessage);
                 } else break;
                 break;
-            /*
-                #35
-            */
             case MESSAGE_DEVICE_NAME:
-                Log.i(TAG, "handleMessage: BLUETOOTHCHAT message device name");
+                Log.i(TAG, "BluetoothHandler: handleMessage: BLUETOOTHCHAT message device name");
                 // save the connected device's name
                 String mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
                 Toast.makeText(context, "Connected to "
                         + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
                 break;
             case MESSAGE_TOAST:
-                Log.i(TAG, "handleMessage: BLUETOOTHCHAT message toast");
+                Log.i(TAG, "BluetoothHandler: handleMessage: BLUETOOTHCHAT message toast");
                 Toast.makeText(context, msg.getData().getString(TOAST),
                         Toast.LENGTH_SHORT).show();
                 break;
@@ -74,6 +68,7 @@ public class BluetoothHandler extends Handler {
     }
 
     public void setTextView(TextView textView) {
+        Log.i(TAG, "setTextView: BluetoothHandler");
         this.textView = textView;
     }
 }

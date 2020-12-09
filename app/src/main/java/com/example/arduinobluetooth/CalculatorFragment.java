@@ -8,17 +8,14 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-
 import java.util.Objects;
-
-import static android.content.ContentValues.TAG;
 
 public class CalculatorFragment extends Fragment {
 
+    private static final String TAG = "MY_LOG ";
     private TextView textView;
     private TextView textViewInput;
     private TextView textViewError;
@@ -26,55 +23,77 @@ public class CalculatorFragment extends Fragment {
     private Calculator calculator;
     private BaseApp appState;
 
+    /**
+     * onCreate - initializes BaseApp's object, gets it's instance and then initializes
+     * main connection object using getmChat() method from BaseApp.
+     * Initializes Calculator's class constructor in order to perform mathematical operations
+     */
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
-        Log.i(TAG, "onCreate: CONTROLFRAGMENT");
+        Log.i(TAG, "onCreate: CALCULATOR_FRAGMENT");
         super.onCreate(savedInstanceState);
         appState = ((BaseApp) Objects.requireNonNull(getActivity()).getApplication());
-        mBluetoothchat = appState.getmChatService();
+        mBluetoothchat = appState.getmChat();
         calculator = new Calculator();
     }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        Log.i(TAG, "onCreateView: CALCULATOR_FRAGMENT");
         return inflater.inflate(R.layout.fragment_calculator, container, false);
     }
 
+    /**
+     * onViewCreated - initializes every UI's objects using setupChat() method
+     */
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        Log.i(TAG, "onViewCreated: CALCULATOR_FRAGMENT");
         super.onViewCreated(view, savedInstanceState);
         setupChat(view);
     }
 
+    /**
+     * onResume - makes sure to keep up BluetoothChat's object's reference
+     */
     @Override
     public void onResume() {
+        Log.i(TAG, "onResume: CALCULATOR_FRAGMENT");
         super.onResume();
         if (mBluetoothchat != null) {
             if (mBluetoothchat.getState() == BluetoothChat.STATE_NONE) {
                 mBluetoothchat.start();
                 mBluetoothchat.getmHandler().setTextView(textView);
             }
-        } else mBluetoothchat = appState.getmChatService();
+        } else mBluetoothchat = appState.getmChat();
     }
 
     @Override
     public void onPause() {
+        Log.i(TAG, "onPause: CALCULATOR_FRAGMENT");
         super.onPause();
     }
 
     @Override
     public void onStop() {
+        Log.i(TAG, "onStop: CALCULATOR_FRAGMENT");
         super.onStop();
     }
 
     @Override
     public void onDestroy() {
+        Log.i(TAG, "onDestroy: CALCULATOR_FRAGMENT");
         super.onDestroy();
     }
 
+    /**
+     * initializes every UI's objects. Every button has it's own
+     * listener with static parameter that's being send
+     * to method ButtonClick()
+     */
     private void setupChat(View view) {
-        Log.i(TAG, "setupChat: ");
+        Log.i(TAG, "setupChat: CALCULATOR_FRAGMENT");
         textView = view.findViewById(R.id.answer_txtview_ctrl);
         textViewInput = view.findViewById(R.id.input_txtview_ctrl);
         textViewError = view.findViewById(R.id.error_txtview_ctrl);
@@ -120,8 +139,12 @@ public class CalculatorFragment extends Fragment {
         option19.setOnClickListener(view14 -> ButtonClick("⬅"));
     }
 
+    /**
+     * Depending on which parameter has been passed to the method, it will perform
+     * different mathematical operations
+     */
     public void ButtonClick(String option){
-        Log.i(TAG, "ButtonClick: ");
+        Log.i(TAG, "ButtonClick: CALCULATOR_FRAGMENT");
         switch (option){
             case "AC":
                 calculator.setInput("");
@@ -177,20 +200,24 @@ public class CalculatorFragment extends Fragment {
                 }
                 calculator.setInput(calculator.getinput() + option);
                 textViewInput.setText(calculator.getinput());
-                if(calculator.getError().equals("")) updateArduino();
-                else updateArduino();
+                updateArduino();
         }
 
     }
 
+    /**
+     * if connected, it'll check if error field is empty, if it isn't, then it'll send
+     * error field's content to arduino. If it's empty, it'll get content out of input
+     * field and pass it to the arduino using BluetoothChat's instance
+     */
     private void updateArduino() {
+        Log.i(TAG, "updateArduino: CALCULATOR_FRAGMENT");
         if(mBluetoothchat != null) {
             String message;
             if(calculator.getError().equals("")) message = calculator.getinput();
             else message = calculator.getError();
             message += "\n";
-            if(mBluetoothchat.sendMessage(message)) return;
-            else Toast.makeText(getActivity(), R.string.not_connected, Toast.LENGTH_SHORT).show();
-        }
+            mBluetoothchat.sendMessage(message);
+        } else Toast.makeText(getActivity(), R.string.not_connected, Toast.LENGTH_SHORT).show();
     }
 }

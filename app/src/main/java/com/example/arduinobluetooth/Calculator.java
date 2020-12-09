@@ -2,13 +2,15 @@ package com.example.arduinobluetooth;
 
 import android.util.Log;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static android.content.ContentValues.TAG;
-
+/**
+ * This class does simple mathematical operations
+ * I didn't make it propely at all on purpose, if you type something similar to ex: "-1+"
+ * the exception will occur and it's content will be written to error variable
+ * then program will send error message instead of input to arduino for displaying.
+ */
 public class Calculator {
 
+    private static final String TAG = "MY_LOG ";
     private String input;
     private String error;
     private String answer;
@@ -16,46 +18,46 @@ public class Calculator {
     private String[] chars = {"+", "-", "*", "/", "."};
 
     public Calculator() {
-        Log.i(TAG, "Calculator: ");
+        Log.i(TAG, "Calculator: constructor");
         this.input = "";
         this.error = "";
     }
 
     public String getinput() {
-        Log.i(TAG, "getinput: ");
+        Log.i(TAG, "getinput: CALCULATOR");
         return this.input;
     }
     public String getError() {
-        Log.i(TAG, "getError: ");
+        Log.i(TAG, "getError: CALCULATOR");
         return this.error;
     }
     public void setError(String error) {
-        Log.i(TAG, "setError: ");
+        Log.i(TAG, "setError: CALCULATOR");
         this.error = error;
     }
     public void setInput(String input) {
-        Log.i(TAG, "setInput: ");
+        Log.i(TAG, "setInput: CALCULATOR");
         this.input = input;
     }
     public boolean getClearResult() {
-        Log.i(TAG, "getClearResult: ");
+        Log.i(TAG, "getClearResult: CALCULATOR");
         return clearResult;
     }
     public void setClearResult(boolean clearResult) {
-        Log.i(TAG, "setClearResult: ");
+        Log.i(TAG, "setClearResult: CALCULATOR");
         this.clearResult = clearResult;
     }
     public String getAnswer() {
-        Log.i(TAG, "getAnswer: ");
+        Log.i(TAG, "getAnswer: CALCULATOR");
         return answer;
     }
     public void setAnswer(String answer) {
-        Log.i(TAG, "setAnswer: ");
+        Log.i(TAG, "setAnswer: CALCULATOR");
         this.answer = answer;
     }
 
     public boolean Solve(){
-        Log.i(TAG, "Solve: ");
+        Log.i(TAG, "Solve: CALCULATOR");
         if(input.split("\\*").length == 2) {
             String[] numbers = input.split("\\*");
             try {

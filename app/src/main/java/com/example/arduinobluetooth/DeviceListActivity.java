@@ -20,17 +20,22 @@ import android.widget.ListView;
 import android.widget.TextView;
 import java.util.Set;
 
-import static android.content.ContentValues.TAG;
-
 public class DeviceListActivity extends Activity {
+
+    private static final String TAG = "MY_LOG ";
     // Return Intent extra
     public static String EXTRA_DEVICE_ADDRESS = "device_address";
     // Member fields
     private BluetoothAdapter mBtAdapter;
     private ArrayAdapter<CharSequence> mNewDevicesArrayAdapter;
 
+    /**
+     * onCreate - initializes activity's UI objects. If BT is turned on, it'll display
+     * a list of paired devices.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.i(TAG, "onCreate: DEVICELISTACTIVITY");
         super.onCreate(savedInstanceState);
         // Setup the window
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
@@ -81,6 +86,7 @@ public class DeviceListActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        Log.i(TAG, "onDestroy: DEVICELISTACTIVITY");
         super.onDestroy();
         // Make sure we're not doing discovery anymore
         if (mBtAdapter != null) {
@@ -94,6 +100,7 @@ public class DeviceListActivity extends Activity {
      * Start device discover with the BluetoothAdapter
      */
     private void doDiscovery() {
+        Log.i(TAG, "doDiscovery: DEVICELISTACTIVITY");
         // Indicate scanning in the title
         setProgressBarIndeterminateVisibility(true);
         setTitle(R.string.scanning);
@@ -107,9 +114,14 @@ public class DeviceListActivity extends Activity {
         mBtAdapter.startDiscovery();
     }
 
-    // The on-click listener for all devices in the ListViews
+    /**
+     * The on-click listener for all devices in the ListViews. If one of the devices
+     * has been clicked, it'll get all the data out of that device, put it into intent
+     * set onActivityResult callback and finish devicelistactivity.
+     */
     private OnItemClickListener mDeviceClickListener = new OnItemClickListener() {
         public void onItemClick(AdapterView av, View v, int arg2, long arg3) {
+            Log.i(TAG, "onItemClick: DEVICELISTACTIVITY");
             // Cancel discovery because it's costly and we're about to connect
             mBtAdapter.cancelDiscovery();
             // Get the device MAC address, which is the last 17 chars in the View
@@ -124,11 +136,14 @@ public class DeviceListActivity extends Activity {
         }
     };
 
-    // The BroadcastReceiver that listens for discovered devices and
-    // changes the title when discovery is finished
+    /**
+     * The BroadcastReceiver that listens for discovered devices and
+     * changes the title when discovery is finished
+     */
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            Log.i(TAG, "onReceive: DEVICELISTACTIVITY");
             String action = intent.getAction();
             // When discovery finds a device
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
@@ -151,8 +166,11 @@ public class DeviceListActivity extends Activity {
         }
     };
 
+    /**
+     * When button Discoverable has been clicked, it'll start discoverable mode on my android device
+     */
     private void ensureDiscoverable() {
-        Log.i(TAG, "ensureDiscoverable: MAIN");
+        Log.i(TAG, "ensureDiscoverable: DEVICELISTACTIVITY");
         BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (mBluetoothAdapter.getScanMode() != BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
             Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);

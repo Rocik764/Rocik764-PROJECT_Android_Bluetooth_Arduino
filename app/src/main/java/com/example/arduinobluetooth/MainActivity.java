@@ -10,7 +10,6 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,13 +17,11 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import com.google.android.material.navigation.NavigationView;
-
 import java.util.Objects;
-
-import static android.content.ContentValues.TAG;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
+    private static final String TAG = "MY_LOG ";
     public static DrawerLayout drawer;
     // Intent request codes
     private static final int REQUEST_CONNECT_DEVICE = 1;
@@ -38,9 +35,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     // Member object for the bluetooth connection
     public BluetoothChat mBluetoothchat;
 
+    /**
+     * Initializes and sets up toolbar's and navigation drawer's UI.
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.i(TAG, "onCreate: MAIN");
+        Log.i(TAG, "onCreate: MAINACTIVITY");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -69,26 +69,18 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
-    /*
-        #2
-        #16
-        #27
-     */
     @Override
     public void onStart() {
-        Log.i(TAG, "onStart: MAIN");
+        Log.i(TAG, "onStart: MAINACTIVITY");
         super.onStart();
     }
 
-    /*
-        #3
-        #8
-        #17
-        #28
+    /**
+     * onResume - makes sure to keep up BluetoothChat's object's reference
      */
     @Override
     public synchronized void onResume() {
-        Log.i(TAG, "onResume: MAIN");
+        Log.i(TAG, "onResume: MAINACTIVITY");
         super.onResume();
         if (mBluetoothchat != null) {
             if (mBluetoothchat.getState() == BluetoothChat.STATE_NONE) {
@@ -96,42 +88,27 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
         }
     }
-    /*
-        #6
-     */
-    /*
-        #4
-        #14
-        #20
-     */
+
     @Override
     public synchronized void onPause() {
-        Log.i(TAG, "onPause: MAIN");
+        Log.i(TAG, "onPause: MAINACTIVITY");
         super.onPause();
-
     }
 
-    /*
-        #15
-        #21
-    */
     @Override
     public void onStop() {
-        Log.i(TAG, "onStop: MAIN");
+        Log.i(TAG, "onStop: MAINACTIVITY");
         super.onStop();
-
     }
 
     @Override
     public void onDestroy() {
-        Log.i(TAG, "onDestroy: MAIN");
+        Log.i(TAG, "onDestroy: MAINACTIVITY");
         super.onDestroy();
-        // Stop the Bluetooth chat services
-        //if (mBluetoothchat != null) mBluetoothchat.stop();
     }
 
     public void onBackPressed() {
-        Log.i(TAG, "onBackPressed: MAIN");
+        Log.i(TAG, "onBackPressed: MAINACTIVITY");
         if(drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
@@ -139,17 +116,20 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
-    /*
-        #5
-        #22
-     */
-    /*
-        REQUEST_ENABLE_BT goes first -> when app requests BT to be enabled and user enables it or not (pressing Yes/No)
+    /**
+     * This method awaits for callbacks from activities. After choosing the device to start
+     * connection, this method will activate and get the intent from DeviceListActivity.
+     * If the state isn't already in connecting stage it'll get MAC address out of the intent
+     * create BluetoothDevice object, get info about the PAIRED device from hardware's
+     * bluetooth adapter using it's address and start connecting to it using BluetoothChat's
+     * instance that has been initialized in setupChat() method. At the end it'll set the instance
+     * to our main connection object inside BaseApp class so that we can always call it from
+     * different fragments or activity around the application.
      */
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Log.i(TAG, "onActivityResult: MAIN");
+        Log.i(TAG, "onActivityResult: MAINACTIVITY");
         super.onActivityResult(requestCode, resultCode, data);
-        Log.i(TAG, "onActivityResult: BLUETOOTHCHAT");
+
         switch (requestCode) {
             case REQUEST_CONNECT_DEVICE:
                 if(mBluetoothchat != null && mBluetoothchat.getState() == BluetoothChat.STATE_CONNECTING) {
@@ -160,63 +140,61 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     String address = Objects.requireNonNull(data.getExtras()).getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
                     // Get the BLuetoothDevice object
                     BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
+                    Log.i(TAG, "onActivityResult: MAINACTIVITY: address: " + address + " name: " + device.getName());
                     // Attempt to connect to the device
                     setupChat();
                     mBluetoothchat.connect(device);
-                    appState.setmChatService(mBluetoothchat);
+                    appState.setmChat(mBluetoothchat);
                 }
                 break;
-            case REQUEST_ENABLE_BT:
-                // When the request to enable Bluetooth returns
-                if (resultCode == Activity.RESULT_OK) {
-                    Toast.makeText(this, R.string.bt_enabled, Toast.LENGTH_SHORT).show();
-                } else {
-                    // User did not enable Bluetooth or an error occured
-                    Toast.makeText(this, R.string.bt_not_enabled_leaving, Toast.LENGTH_SHORT).show();
-                    finish();
-                }
         }
     }
 
-    /*
-        Sets up whole chat. Send button gets string from TextView and calls sendMessage
-    */
+    /**
+     * Initializes new Handler and passes it to new initialized BluetoothChat's object
+     */
     private void setupChat() {
-        Log.i(TAG, "setupService: MAIN");
-
+        Log.i(TAG, "setupService: MAINACTIVITY");
         // Initialize BluetoothHandler
         BluetoothHandler mBluetoothHandler = new BluetoothHandler(getApplicationContext());
-
         // Initialize the BluetoothChat to perform bluetooth connections
         mBluetoothchat = new BluetoothChat(mBluetoothHandler,this);
     }
 
+    /**
+     * Listener for navigation drawer. When user switches between fragments, this method is called
+     * and opens the fragment that has been clicked.
+     */
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
-        Log.i(TAG, "onNavigationItemSelected: MAIN");
+        Log.i(TAG, "onNavigationItemSelected: MAINACTIVITY");
         switch (menuItem.getItemId()) {
             case R.id.nav_bluetooth:
                 getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new BluetoothFragment()).commit();
                 break;
             case R.id.nav_control:
                 getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new CalculatorFragment()).commit();
-            case R.id.nav_exit:
-                break;
         }
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
 
+    /**
+     * Creates menu's options on the toolbar
+     */
     public boolean onCreateOptionsMenu(Menu menu) {
-        Log.i(TAG, "onCreateOptionsMenu: MAIN");
+        Log.i(TAG, "onCreateOptionsMenu: MAINACTIVITY");
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.bluetooth_menu, menu);
         return true;
     }
 
+    /**
+     * Listener for main toolbar. It checks which item has been clicked from the toolbar's menu
+     */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        Log.i(TAG, "onOptionsItemSelected: MAIN");
+        Log.i(TAG, "onOptionsItemSelected: MAINACTIVITY");
         switch (item.getItemId()) {
             case R.id.search:
                 Intent serverIntent = new Intent(this, DeviceListActivity.class);

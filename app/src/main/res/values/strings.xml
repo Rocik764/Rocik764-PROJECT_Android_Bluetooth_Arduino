@@ -44,7 +44,7 @@
     <string name="type_text">Type some text to send</string>
     <string name="exit">Exit</string>
     <string name="options">Options</string>
-    <string name="control">Control</string>
+    <string name="Calculator">Calculator</string>
     <string name="bluetooth">Bluetooth</string>
     <string name="aplikacja_sterujca_arduino">Aplikacja sterująca Arduino</string>
     <string name="podpis">Szymon Bury 44325</string>
