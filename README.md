@@ -33,19 +33,21 @@ the data will be displayed as a scrolling text on RGB matrices.
 * [MAX7219](https://www.amazon.com/DAOKI-MAX7219-Control-Display-Raspberry/dp/B07X95H9DT/ref=sr_1_6?dchild=1&keywords=MAX7219&qid=1619189950&sr=8-6)
 
 [connection]: ./readme_images/connection_schema.png "connection"
-[app_asking_for_permission]: ./readme_images/app_asking_for_permission.jpg "app asking for permission"
-[bt_options]: ./readme_images/bt_options.jpg "bt options"
-[successful_connection]: ./readme_images/successful_connection.jpg "successful connection"
 
 ## Connection schema
 ![connection schema][connection]
 
 ## Example screenshots
 #### Drop down options
-![bt options][bt_options]
+<img src="./readme_images/bt_options.jpg" width="256" height="512">
+
 #### After turning BT on, app will ask for permission
-![app asking for permission][app_asking_for_permission]
-#### successful connection to device - "connected to name" ('name' = my HC-06's name) 
-![successful connection][successful_connection]
+<img src="./readme_images/app_asking_for_permission.jpg" width="256" height="512">
+
+#### Successful connection to device - "connected to name" ('name' = my HC-06's name) 
+<img src="./readme_images/successful_connection.jpg" width="256" height="512">
 
 ## Preview video
+
+https://user-images.githubusercontent.com/63047043/115904462-17083c80-a465-11eb-9a67-393222194e14.mp4
+
