@@ -4,16 +4,15 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-
-
     <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="vertical"
+        android:padding="20dp">
 
         <EditText
             android:id="@+id/edit_text_out"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
             android:layout_weight="1"
@@ -27,11 +26,12 @@
             android:layout_height="wrap_content"
             android:text="@string/send" />
 
-    </LinearLayout>
+        <TextView
+            android:id="@+id/answer_txtview_bt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/answer"
+            android:textSize="25dp"/>
 
-    <TextView
-        android:id="@+id/answer_txtview_bt"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/answer" />
+    </LinearLayout>
 </LinearLayout>

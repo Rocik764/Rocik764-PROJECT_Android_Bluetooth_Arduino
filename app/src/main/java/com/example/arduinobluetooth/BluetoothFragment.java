@@ -3,30 +3,25 @@ package com.example.arduinobluetooth;
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import java.util.Objects;
+import static com.example.arduinobluetooth.BaseApp.TAG;
 
 public class BluetoothFragment extends Fragment {
 
-    private static final String TAG = "MY_LOG ";
-    public BluetoothChat mBluetoothchat;
+    public BluetoothChatService bluetoothChatService;
     public Button mSendButton;
     public TextView textView;
     public EditText mOutEditText;
     private StringBuffer mOutStringBuffer;
-    private BaseApp appState;
 
     /**
      * onCreate - initializes BaseApp's object, gets it's instance and then initializes
@@ -36,9 +31,10 @@ public class BluetoothFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         Log.i(TAG, "onCreate: BLUETOOTH_FRAGMENT");
         super.onCreate(savedInstanceState);
-        appState = ((BaseApp) Objects.requireNonNull(getActivity()).getApplication());
-        mBluetoothchat = appState.getmChat();
+        MainActivity mainActivity = (MainActivity) getActivity();
+        if(mainActivity != null) bluetoothChatService = mainActivity.bluetoothChatService;
     }
+
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -61,6 +57,10 @@ public class BluetoothFragment extends Fragment {
     @Override
     public void onStart() {
         Log.i(TAG, "onStart: BLUETOOTH_FRAGMENT");
+        if(bluetoothChatService != null) {
+            Log.i(TAG, "onStart: BLUETOOTH_FRAGMENT NOT NULL textView");
+            bluetoothChatService.getmHandler().setTextView(textView);
+        }
         super.onStart();
     }
 
@@ -71,12 +71,10 @@ public class BluetoothFragment extends Fragment {
     public synchronized void onResume() {
         Log.i(TAG, "onResume: BLUETOOTH_FRAGMENT");
         super.onResume();
-        if (mBluetoothchat != null) {
-            if (mBluetoothchat.getState() == BluetoothChat.STATE_NONE) {
-                mBluetoothchat.start();
-                mBluetoothchat.getmHandler().setTextView(textView);
-            }
-        } else mBluetoothchat = appState.getmChat();
+        if (bluetoothChatService == null) {
+            MainActivity mainActivity = (MainActivity) getActivity();
+            if(mainActivity != null) bluetoothChatService = mainActivity.bluetoothChatService;
+        }
     }
 
     @Override
@@ -106,21 +104,20 @@ public class BluetoothFragment extends Fragment {
     public void setupChat(View view) {
         Log.i(TAG, "setupChat: BLUETOOTH_FRAGMENT");
         textView = view.findViewById(R.id.answer_txtview_bt);
-        if(mBluetoothchat != null) mBluetoothchat.getmHandler().setTextView(textView);
-
         mOutEditText = view.findViewById(R.id.edit_text_out);
         //mOutEditText.setOnEditorActionListener(mWriteListener);
         mSendButton = view.findViewById(R.id.button_send);
         mSendButton.setOnClickListener(v -> {
-            if(mBluetoothchat != null) {
+            if(bluetoothChatService != null) {
+                Log.i(TAG, "setupChat: BLUETOOTH_FRAGMENT setOnClickListener mSendButton");
                 TextView editTextView = view.findViewById(R.id.edit_text_out);
                 String message = editTextView.getText().toString();
                 message += "\n";
-                mBluetoothchat.sendMessage(message);
+                bluetoothChatService.sendMessage(message);
                 // Reset out string buffer to zero and clear the edit text field
                 mOutStringBuffer.setLength(0);
                 mOutEditText.setText(mOutStringBuffer);
-            } else Toast.makeText(getActivity(),R.string.not_connected, Toast.LENGTH_LONG).show();
+            } else Toast.makeText(getActivity(), R.string.not_connected, Toast.LENGTH_LONG).show();
         });
         // Initialize the buffer for outgoing messages
         mOutStringBuffer = new StringBuffer();

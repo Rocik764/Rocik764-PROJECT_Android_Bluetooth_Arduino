@@ -1,18 +1,33 @@
 package com.example.arduinobluetooth;
 
+import android.app.Notification;
+import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
-import android.content.Context;
+import android.content.Intent;
+import android.os.Binder;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.os.Message;
 import android.util.Log;
-
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.UUID;
+import static com.example.arduinobluetooth.BaseApp.CHANNEL_1_ID;
+import static com.example.arduinobluetooth.BaseApp.MY_UUID;
+import static com.example.arduinobluetooth.BaseApp.SERVICE_NOTIFICATION_DESCRIPTION_CONNECTED;
+import static com.example.arduinobluetooth.BaseApp.SERVICE_NOTIFICATION_DESCRIPTION_CONNECTING;
+import static com.example.arduinobluetooth.BaseApp.SERVICE_NOTIFICATION_DESCRIPTION_CONNECTION_FAILED;
+import static com.example.arduinobluetooth.BaseApp.SERVICE_NOTIFICATION_DESCRIPTION_DISCONNECTED;
+import static com.example.arduinobluetooth.BaseApp.SERVICE_NOTIFICATION_DESCRIPTION_START;
+import static com.example.arduinobluetooth.BaseApp.SERVICE_NOTIFICATION_DESCRIPTION_STOPPED;
+import static com.example.arduinobluetooth.BaseApp.STATE_CONNECTED;
+import static com.example.arduinobluetooth.BaseApp.STATE_CONNECTING;
+import static com.example.arduinobluetooth.BaseApp.STATE_NONE;
+import static com.example.arduinobluetooth.BaseApp.TAG;
 
 /**
  * This class does all the work for setting up and managing Bluetooth
@@ -20,45 +35,65 @@ import java.util.UUID;
  * incoming connections, a thread for connecting with a device, and a
  * thread for performing data transmissions when connected.
  */
-public class BluetoothChat {
+public class BluetoothChatService extends Service {
 
-    private static final String TAG = "MY_LOG ";
-    // Name for the SDP record when creating server socket
-    private static final String NAME = "BluetoothFragment";
-
-    // Unique UUID for this application
-    private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
-
+    private final IBinder mBinder = new MyBinder();
     // Member fields
-    private final BluetoothAdapter mAdapter;
-    private final BluetoothHandler mHandler;
-    private AcceptThread mAcceptThread;
+    private BluetoothAdapter mAdapter;
+    private BluetoothHandler mHandler;
     private ConnectThread mConnectThread;
     private ConnectedThread mConnectedThread;
-    private Context context;
     private int mState;
-
-    // Constants that indicate the current connection state
-    public static final int STATE_NONE = 0;       // we're doing nothing
-    public static final int STATE_LISTEN = 1;     // now listening for incoming connections
-    public static final int STATE_CONNECTING = 2; // now initiating an outgoing connection
-    public static final int STATE_CONNECTED = 3;  // now connected to a remote device
+    private NotificationManagerCompat notificationManager;
 
     /**
      * Constructor. Prepares a new BluetoothFragment session.
-     *
-     * @param handler A Handler to send messages back to the UI Activity
      */
-    public BluetoothChat(BluetoothHandler handler, Context context) {
+    public BluetoothChatService() {
         Log.i(TAG, "BluetoothChat: constructor");
+    }
+
+    @Override
+    public void onCreate() {
+        Log.i(TAG, "BluetoothChat: onCreate");
+        super.onCreate();
         this.mAdapter = BluetoothAdapter.getDefaultAdapter();
         this.mState = STATE_NONE;
-        this.mHandler = handler;
-        this.context = context;
+        this.mHandler = new BluetoothHandler();
+        notificationManager = NotificationManagerCompat.from(this);
+        start();
+        sendNotification(SERVICE_NOTIFICATION_DESCRIPTION_START);
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        // TODO: Return the communication channel to the service.
+        return mBinder;
+    }
+
+    public class MyBinder extends Binder {
+
+        BluetoothChatService getService(){
+            return BluetoothChatService.this;
+        }
     }
 
     public BluetoothHandler getmHandler() {
         return this.mHandler;
+    }
+
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        Log.d(TAG, "onTaskRemoved: called.");
+        super.onTaskRemoved(rootIntent);
+        stopSelf();
+    }
+
+    @Override
+    public void onDestroy() {
+        Log.d(TAG, "onDestroy: called.");
+        sendNotification(SERVICE_NOTIFICATION_DESCRIPTION_STOPPED);
+        super.onDestroy();
     }
 
     /**
@@ -87,10 +122,6 @@ public class BluetoothChat {
      */
     public void sendMessage(String message) {
         Log.i(TAG, "sendMessage: BLUETOOTHCHAT");
-        // Check that we're actually connected before trying anything
-        if (getState() != BluetoothChat.STATE_CONNECTED) {
-            return;
-        }
         // Check that there's actually something to send
         if (message.length() > 0) {
             // Get the message bytes and tell the BluetoothChat to write
@@ -115,12 +146,7 @@ public class BluetoothChat {
             mConnectedThread.cancel();
             mConnectedThread = null;
         }
-        // Start the thread to listen on a BluetoothServerSocket
-        if (mAcceptThread == null) {
-            mAcceptThread = new AcceptThread();
-            mAcceptThread.start();
-        }
-        setState(STATE_LISTEN);
+        setState(STATE_NONE);
     }
 
     /**
@@ -145,6 +171,7 @@ public class BluetoothChat {
         // Start the thread to connect with the given device
         mConnectThread = new ConnectThread(device);
         mConnectThread.start();
+        sendNotification(SERVICE_NOTIFICATION_DESCRIPTION_CONNECTING + device.getName());
         setState(STATE_CONNECTING);
     }
 
@@ -166,11 +193,6 @@ public class BluetoothChat {
             mConnectedThread.cancel();
             mConnectedThread = null;
         }
-        // Cancel the accept thread because we only want to connect to one device
-        if (mAcceptThread != null) {
-            mAcceptThread.cancel();
-            mAcceptThread = null;
-        }
         // Start the thread to manage the connection and perform transmissions
         mConnectedThread = new ConnectedThread(socket);
         mConnectedThread.start();
@@ -180,6 +202,7 @@ public class BluetoothChat {
         bundle.putString(BluetoothHandler.DEVICE_NAME, device.getName());
         msg.setData(bundle);
         mHandler.sendMessage(msg);
+        sendNotification(SERVICE_NOTIFICATION_DESCRIPTION_CONNECTED + device.getName());
         setState(STATE_CONNECTED);
     }
 
@@ -195,10 +218,6 @@ public class BluetoothChat {
         if (mConnectedThread != null) {
             mConnectedThread.cancel();
             mConnectedThread = null;
-        }
-        if (mAcceptThread != null) {
-            mAcceptThread.cancel();
-            mAcceptThread = null;
         }
         setState(STATE_NONE);
     }
@@ -227,9 +246,10 @@ public class BluetoothChat {
      */
     private void connectionFailed() {
         Log.i(TAG, "connectionFailed: BLUETOOTHCHAT");
-        setState(STATE_LISTEN);
+        setState(STATE_NONE);
+        sendNotification(SERVICE_NOTIFICATION_DESCRIPTION_CONNECTION_FAILED);
         // Send a failure message back to the Activity
-        error("Unable to connect device");
+        error("Unable to connect to the device");
     }
 
     /**
@@ -237,82 +257,10 @@ public class BluetoothChat {
      */
     private void connectionLost() {
         Log.i(TAG, "connectionLost: BLUETOOTHCHAT");
-        setState(STATE_LISTEN);
+        setState(STATE_NONE);
+        sendNotification(SERVICE_NOTIFICATION_DESCRIPTION_DISCONNECTED);
         // Send a failure message back to the Activity
         error("Device connection was lost");
-    }
-
-    /**
-     * This thread runs while listening for incoming connections. It behaves
-     * like a server-side client. It runs until a connection is accepted
-     * (or until cancelled).
-     */
-    private class AcceptThread extends Thread {
-
-        // The local server socket
-        private BluetoothServerSocket mmServerSocket;
-
-        public AcceptThread() {
-            Log.i(TAG, "AcceptThread: BLUETOOTHCHAT");
-            BluetoothServerSocket tmp = null;
-            // Create a new listening server socket
-            try {
-                tmp = mAdapter.listenUsingRfcommWithServiceRecord(NAME, MY_UUID);
-            } catch (IOException e) {
-                error("Something went wrong");
-                System.out.println(e.toString());
-            }
-            mmServerSocket = tmp;
-        }
-
-        public void run() {
-            Log.i(TAG, "run: AcceptThread BLUETOOTHCHAT");
-            setName("AcceptThread");
-            BluetoothSocket socket = null;
-            // Listen to the server socket if we're not connected
-            while (mState != STATE_CONNECTED) {
-                try {
-                    // This is a blocking call and will only return on a
-                    // successful connection or an exception
-                    socket = mmServerSocket.accept();
-                } catch (IOException e) {
-                    error("Something went wrong");
-                    System.out.println(e.toString());
-                }
-                // If a connection was accepted
-                if (socket != null) {
-                    synchronized (BluetoothChat.this) {
-                        switch (mState) {
-                            case STATE_LISTEN:
-                            case STATE_CONNECTING:
-                                // Situation normal. Start the connected thread.
-                                connected(socket, socket.getRemoteDevice());
-                                break;
-                            case STATE_NONE:
-                            case STATE_CONNECTED:
-                                // Either not ready or already connected. Terminate new socket.
-                                try {
-                                    socket.close();
-                                } catch (IOException e) {
-                                    error("Something went wrong");
-                                    System.out.println(e.toString());
-                                }
-                                break;
-                        }
-                    }
-                }
-            }
-        }
-
-        public void cancel() {
-            Log.i(TAG, "cancel: AcceptThread BLUETOOTHCHAT");
-            try {
-                mmServerSocket.close();
-            } catch (IOException e) {
-                error("Something went wrong");
-                System.out.println(e.toString());
-            }
-        }
     }
 
     /**
@@ -333,7 +281,7 @@ public class BluetoothChat {
             try {
                 tmp = device.createRfcommSocketToServiceRecord(MY_UUID);
             } catch (IOException e) {
-                error("Something went wrong");
+                error(e.getMessage());
                 System.out.println(e.toString());
             }
             mmSocket = tmp;
@@ -351,21 +299,21 @@ public class BluetoothChat {
                 mmSocket.connect();
             } catch (IOException e) {
                 Log.d("error: ", e.toString());
-                error("Something went wrong");
+                error(e.getMessage());
                 connectionFailed();
                 // Close the socket
                 try {
                     mmSocket.close();
                 } catch (IOException e2) {
-                    error("Something went wrong");
+                    error(e.getMessage());
                     System.out.println(e2.toString());
                 }
                 // Start the service over to restart listening mode
-                BluetoothChat.this.start();
+                BluetoothChatService.this.start();
                 return;
             }
             // Reset the ConnectThread because we're done
-            synchronized (BluetoothChat.this) {
+            synchronized (BluetoothChatService.this) {
                 mConnectThread = null;
             }
             // Start the connected thread
@@ -377,7 +325,7 @@ public class BluetoothChat {
             try {
                 mmSocket.close();
             } catch (IOException e) {
-                error("Something went wrong");
+                error(e.getMessage());
                 System.out.println(e.toString());
             }
         }
@@ -402,7 +350,7 @@ public class BluetoothChat {
                 tmpIn = socket.getInputStream();
                 tmpOut = socket.getOutputStream();
             } catch (IOException e) {
-                error("Something went wrong");
+                error(e.getMessage());
                 System.out.println(e.toString());
             }
             mmInStream = tmpIn;
@@ -441,8 +389,7 @@ public class BluetoothChat {
                 mHandler.obtainMessage(BluetoothHandler.MESSAGE_WRITE, -1, -1, buffer)
                         .sendToTarget();
             } catch (IOException e) {
-                error("Something went wrong");
-                System.out.println(e.toString());
+                error(e.getMessage());
             }
         }
 
@@ -451,8 +398,7 @@ public class BluetoothChat {
             try {
                 mmSocket.close();
             } catch (IOException e) {
-                error("Something went wrong");
-                System.out.println(e.toString());
+                error(e.getMessage());
             }
         }
     }
@@ -468,5 +414,16 @@ public class BluetoothChat {
         bundle.putString(BluetoothHandler.TOAST, message);
         msg.setData(bundle);
         mHandler.sendMessage(msg);
+    }
+
+    private void sendNotification(String description) {
+        Notification notification = new NotificationCompat.Builder(this, CHANNEL_1_ID)
+                .setSmallIcon(R.drawable.ic_bluetooth)
+                .setContentTitle(BaseApp.SERVICE_NOTIFICATION_TITLE)
+                .setContentText(description)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                .build();
+        notificationManager.notify(1, notification);
     }
 }

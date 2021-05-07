@@ -11,17 +11,15 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import java.util.Objects;
+import static com.example.arduinobluetooth.BaseApp.TAG;
 
 public class CalculatorFragment extends Fragment {
 
-    private static final String TAG = "MY_LOG ";
-    private TextView textView;
+    public BluetoothChatService bluetoothChatService;
+
     private TextView textViewInput;
     private TextView textViewError;
-    private BluetoothChat mBluetoothchat;
     private Calculator calculator;
-    private BaseApp appState;
 
     /**
      * onCreate - initializes BaseApp's object, gets it's instance and then initializes
@@ -32,8 +30,8 @@ public class CalculatorFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         Log.i(TAG, "onCreate: CALCULATOR_FRAGMENT");
         super.onCreate(savedInstanceState);
-        appState = ((BaseApp) Objects.requireNonNull(getActivity()).getApplication());
-        mBluetoothchat = appState.getmChat();
+        MainActivity mainActivity = (MainActivity) getActivity();
+        if(mainActivity != null) bluetoothChatService = mainActivity.bluetoothChatService;
         calculator = new Calculator();
     }
 
@@ -61,12 +59,10 @@ public class CalculatorFragment extends Fragment {
     public void onResume() {
         Log.i(TAG, "onResume: CALCULATOR_FRAGMENT");
         super.onResume();
-        if (mBluetoothchat != null) {
-            if (mBluetoothchat.getState() == BluetoothChat.STATE_NONE) {
-                mBluetoothchat.start();
-                mBluetoothchat.getmHandler().setTextView(textView);
-            }
-        } else mBluetoothchat = appState.getmChat();
+        if (bluetoothChatService == null) {
+            MainActivity mainActivity = (MainActivity) getActivity();
+            if(mainActivity != null) bluetoothChatService = mainActivity.bluetoothChatService;
+        }
     }
 
     @Override
@@ -94,10 +90,9 @@ public class CalculatorFragment extends Fragment {
      */
     private void setupChat(View view) {
         Log.i(TAG, "setupChat: CALCULATOR_FRAGMENT");
-        textView = view.findViewById(R.id.answer_txtview_ctrl);
+
         textViewInput = view.findViewById(R.id.input_txtview_ctrl);
         textViewError = view.findViewById(R.id.error_txtview_ctrl);
-        if(mBluetoothchat != null) mBluetoothchat.getmHandler().setTextView(textView);
 
         Button option0 = view.findViewById(R.id.option16_btn);
         option0.setOnClickListener(view1 -> ButtonClick("0"));
@@ -172,7 +167,6 @@ public class CalculatorFragment extends Fragment {
                 calculator.setClearResult(true);
                 if(calculator.Solve()) textViewInput.setText(calculator.getinput());
                 else textViewError.setText(calculator.getError());
-                calculator.setAnswer(calculator.getinput());
                 updateArduino();
                 break;
             case "⬅":
@@ -194,7 +188,7 @@ public class CalculatorFragment extends Fragment {
                     else textViewError.setText(calculator.getError());
                     updateArduino();
                 }
-                else if(calculator.getClearResult() == true){
+                else if(calculator.getClearResult()){
                     calculator.setInput("");
                     calculator.setClearResult(false);
                 }
@@ -212,12 +206,12 @@ public class CalculatorFragment extends Fragment {
      */
     private void updateArduino() {
         Log.i(TAG, "updateArduino: CALCULATOR_FRAGMENT");
-        if(mBluetoothchat != null) {
+        if(bluetoothChatService != null) {
             String message;
             if(calculator.getError().equals("")) message = calculator.getinput();
             else message = calculator.getError();
             message += "\n";
-            mBluetoothchat.sendMessage(message);
-        } else Toast.makeText(getActivity(), R.string.not_connected, Toast.LENGTH_SHORT).show();
+            bluetoothChatService.sendMessage(message);
+        } else Toast.makeText(getActivity(), R.string.not_connected, Toast.LENGTH_LONG).show();
     }
 }

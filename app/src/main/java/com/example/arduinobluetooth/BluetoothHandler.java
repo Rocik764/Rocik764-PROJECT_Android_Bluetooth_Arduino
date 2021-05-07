@@ -25,8 +25,11 @@ public class BluetoothHandler extends Handler {
     private Context context;
 
     // The Handler that gets information back from the BluetoothChat
-    public BluetoothHandler(Context context) {
+    public BluetoothHandler() {
         Log.i(TAG, "BluetoothHandler: constructor");
+    }
+
+    public void setContext(Context context) {
         this.context = context;
     }
 
@@ -57,12 +60,12 @@ public class BluetoothHandler extends Handler {
                 // save the connected device's name
                 String mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
                 Toast.makeText(context, "Connected to "
-                        + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
+                        + mConnectedDeviceName, Toast.LENGTH_LONG).show();
                 break;
             case MESSAGE_TOAST:
                 Log.i(TAG, "BluetoothHandler: handleMessage: BLUETOOTHCHAT message toast");
                 Toast.makeText(context, msg.getData().getString(TOAST),
-                        Toast.LENGTH_SHORT).show();
+                        Toast.LENGTH_LONG).show();
                 break;
         }
     }

@@ -13,7 +13,12 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".DeviceListActivity"></activity>
+        <service
+            android:name=".BluetoothChatService"
+            android:enabled="true"
+            android:exported="true"></service>
+
+        <activity android:name=".DeviceListActivity" />
         <activity
             android:name=".MainActivity"
             android:theme="@style/AppTheme.NoActionBar">

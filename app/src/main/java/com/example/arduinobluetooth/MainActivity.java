@@ -1,10 +1,15 @@
 package com.example.arduinobluetooth;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -19,33 +24,34 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import com.google.android.material.navigation.NavigationView;
 import java.util.Objects;
 
+import static com.example.arduinobluetooth.BaseApp.STATE_CONNECTED;
+import static com.example.arduinobluetooth.BaseApp.STATE_CONNECTING;
+import static com.example.arduinobluetooth.BaseApp.TAG;
+
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
-    private static final String TAG = "MY_LOG ";
     public static DrawerLayout drawer;
     // Intent request codes
     private static final int REQUEST_CONNECT_DEVICE = 1;
     private static final int REQUEST_ENABLE_BT = 2;
+    private boolean isBound = false;
 
-    public BaseApp appState;
+    //private Intent intent;
 
     // Local Bluetooth adapter
     public BluetoothAdapter mBluetoothAdapter;
-
+    public BluetoothChatService bluetoothChatService;
     // Member object for the bluetooth connection
-    public BluetoothChat mBluetoothchat;
+    //public BluetoothChat mBluetoothchat;
 
     /**
      * Initializes and sets up toolbar's and navigation drawer's UI.
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.i(TAG, "onCreate: MAINACTIVITY");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-
-        appState = ((BaseApp)this.getApplication());
 
         // If the adapter is null, then Bluetooth is not supported
         if (mBluetoothAdapter == null) {
@@ -72,8 +78,25 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     public void onStart() {
         Log.i(TAG, "onStart: MAINACTIVITY");
+        Intent intent = new Intent(this, BluetoothChatService.class);
+        bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
         super.onStart();
     }
+
+    private final ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+            BluetoothChatService.MyBinder binder = (BluetoothChatService.MyBinder) iBinder;
+            bluetoothChatService = binder.getService();
+            bluetoothChatService.getmHandler().setContext(MainActivity.super.getApplicationContext());
+            isBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            isBound = false;
+        }
+    };
 
     /**
      * onResume - makes sure to keep up BluetoothChat's object's reference
@@ -82,11 +105,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public synchronized void onResume() {
         Log.i(TAG, "onResume: MAINACTIVITY");
         super.onResume();
-        if (mBluetoothchat != null) {
-            if (mBluetoothchat.getState() == BluetoothChat.STATE_NONE) {
-                mBluetoothchat.start();
-            }
-        }
     }
 
     @Override
@@ -105,6 +123,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public void onDestroy() {
         Log.i(TAG, "onDestroy: MAINACTIVITY");
         super.onDestroy();
+        if(isBound) unbindService(serviceConnection);
     }
 
     public void onBackPressed() {
@@ -130,41 +149,27 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         Log.i(TAG, "onActivityResult: MAINACTIVITY");
         super.onActivityResult(requestCode, resultCode, data);
 
-        switch (requestCode) {
-            case REQUEST_CONNECT_DEVICE:
-                if(mBluetoothchat != null && mBluetoothchat.getState() == BluetoothChat.STATE_CONNECTING) {
-                    Toast.makeText(this, "Already connecting", Toast.LENGTH_SHORT).show();
-                } // When DeviceListActivity returns with a device to connect
-                else if (resultCode == Activity.RESULT_OK) {
-                    // Get the device MAC address
-                    String address = Objects.requireNonNull(data.getExtras()).getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
-                    // Get the BLuetoothDevice object
-                    BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
-                    Log.i(TAG, "onActivityResult: MAINACTIVITY: address: " + address + " name: " + device.getName());
-                    // Attempt to connect to the device
-                    setupChat();
-                    mBluetoothchat.connect(device);
-                    appState.setmChat(mBluetoothchat);
-                }
-                break;
+        if (requestCode == REQUEST_CONNECT_DEVICE) {
+            if (bluetoothChatService != null && bluetoothChatService.getState() == STATE_CONNECTING) {
+                Toast.makeText(this, "Already connecting", Toast.LENGTH_SHORT).show();
+            } else if (bluetoothChatService != null && bluetoothChatService.getState() == STATE_CONNECTED) {
+                Toast.makeText(this, "Already connected", Toast.LENGTH_SHORT).show();
+            } else if (resultCode == Activity.RESULT_OK) {
+                // Get the device MAC address
+                String address = Objects.requireNonNull(data.getExtras()).getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
+                // Get the BLuetoothDevice object
+                BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
+                Log.i(TAG, "onActivityResult: MAINACTIVITY: address: " + address + " name: " + device.getName());
+                bluetoothChatService.connect(device);
+            }
         }
-    }
-
-    /**
-     * Initializes new Handler and passes it to new initialized BluetoothChat's object
-     */
-    private void setupChat() {
-        Log.i(TAG, "setupService: MAINACTIVITY");
-        // Initialize BluetoothHandler
-        BluetoothHandler mBluetoothHandler = new BluetoothHandler(getApplicationContext());
-        // Initialize the BluetoothChat to perform bluetooth connections
-        mBluetoothchat = new BluetoothChat(mBluetoothHandler,this);
     }
 
     /**
      * Listener for navigation drawer. When user switches between fragments, this method is called
      * and opens the fragment that has been clicked.
      */
+    @SuppressLint("NonConstantResourceId")
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
         Log.i(TAG, "onNavigationItemSelected: MAINACTIVITY");
@@ -192,6 +197,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     /**
      * Listener for main toolbar. It checks which item has been clicked from the toolbar's menu
      */
+    @SuppressLint("NonConstantResourceId")
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         Log.i(TAG, "onOptionsItemSelected: MAINACTIVITY");
@@ -209,8 +215,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 }
                 return true;
             case R.id.disconnect:
-                mBluetoothchat.stop();
-                appState.stopState();
+                bluetoothChatService.stop();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

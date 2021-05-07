@@ -13,9 +13,7 @@ public class Calculator {
     private static final String TAG = "MY_LOG ";
     private String input;
     private String error;
-    private String answer;
     private boolean clearResult;
-    private String[] chars = {"+", "-", "*", "/", "."};
 
     public Calculator() {
         Log.i(TAG, "Calculator: constructor");
@@ -46,14 +44,6 @@ public class Calculator {
     public void setClearResult(boolean clearResult) {
         Log.i(TAG, "setClearResult: CALCULATOR");
         this.clearResult = clearResult;
-    }
-    public String getAnswer() {
-        Log.i(TAG, "getAnswer: CALCULATOR");
-        return answer;
-    }
-    public void setAnswer(String answer) {
-        Log.i(TAG, "setAnswer: CALCULATOR");
-        this.answer = answer;
     }
 
     public boolean Solve(){
@@ -95,9 +85,9 @@ public class Calculator {
                 error = e.toString();
                 return false;
             }
-        } else if(input.split("\\-").length > 1) {
-            String[] numbers = input.split("\\-");
-            if(numbers[0] == "" && numbers.length == 2) {
+        } else if(input.split("-").length > 1) {
+            String[] numbers = input.split("-");
+            if(numbers[0].equals("") && numbers.length == 2) {
                 numbers[0] = 0 + "";
             }
             try {
