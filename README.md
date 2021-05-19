@@ -15,6 +15,10 @@ Arduino's program schema is inside *arduino_app* folder. After successful instal
 the user is able to connect to Arduino's HC-06 module and send data to the arduino's serial port, 
 the data will be displayed as a scrolling text on RGB matrices.
 
+#### Branches:
+* master (worse version) - code on the master branch works within simple threads that start working after user starts connecting to the device, instance of the class with those threads (BluetoothChat) is stored in BaseApp class that extends Application class. Each fragment in it's onCreate method, retrives instance to the BaseApp object and then gets BluetoothChat instance from there so it can perform tasks on the working thread with bluetooth connection. It is worse version, it doesn't work as good as expected, device connection is often lost and sometimes doesn't want to connect at all.
+* as_service (better version) - MainActivity that hosts all different fragments binds to the service in it's onStart() method right after application's start. When user starts connecting to the arduino device, connection threads in service class are started and kept alive until user closes app or clicks disconnect button from navigation bar. This version works better, I haven't noticed any bigger connection issues so far.
+
 ## Technologies
 * Java
 * C++
